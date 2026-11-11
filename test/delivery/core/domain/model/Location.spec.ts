@@ -1,4 +1,6 @@
 import { Location } from '../../../../../src/delivery/core/domain/model/Location';
+import { ValueObject } from '../../../../../src/common/ValueObject';
+import { Volume } from '../../../../../src/delivery/core/domain/model/Volume';
 
 describe('Location', () => {
   describe('create', () => {
@@ -75,5 +77,13 @@ describe('Location', () => {
         expect(from.distanceTo(to)).toBe(expected);
       },
     );
+  });
+});
+
+describe('ValueObject', () => {
+  it('provides a shared equality contract for value objects', () => {
+    expect(Volume.prototype).toBeInstanceOf(ValueObject);
+    expect(Volume.create(4).equals(Volume.create(4))).toBe(true);
+    expect(Volume.create(4).equals(Volume.create(5))).toBe(false);
   });
 });
