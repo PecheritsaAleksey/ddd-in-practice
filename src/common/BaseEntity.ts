@@ -6,11 +6,20 @@ export abstract class BaseEntity<TId> {
       return false;
     }
 
+    if (this.constructor !== other.constructor) {
+      return false;
+    }
+
     return this.hasSameIdentity(this.id, other.id);
   }
 
   private hasSameIdentity(left: TId, right: TId): boolean {
-    if (left === null || left === undefined || right === null || right === undefined) {
+    if (
+      left === null ||
+      left === undefined ||
+      right === null ||
+      right === undefined
+    ) {
       return left === right;
     }
 
