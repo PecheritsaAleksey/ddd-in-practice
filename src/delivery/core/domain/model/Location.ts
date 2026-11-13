@@ -1,4 +1,6 @@
-export class Location {
+import { ValueObject } from '../../../../common/ValueObject';
+
+export class Location extends ValueObject {
   public static readonly MIN_COORDINATE = 1;
   public static readonly MAX_COORDINATE = 10;
 
@@ -6,6 +8,7 @@ export class Location {
     public readonly xCoordinate: number,
     public readonly yCoordinate: number,
   ) {
+    super();
     Object.freeze(this);
   }
 
@@ -26,11 +29,8 @@ export class Location {
     return new Location(xCoordinate, yCoordinate);
   }
 
-  public equals(other: Location): boolean {
-    return (
-      this.xCoordinate === other.xCoordinate &&
-      this.yCoordinate === other.yCoordinate
-    );
+  protected override getEqualityComponents(): readonly unknown[] {
+    return [this.xCoordinate, this.yCoordinate];
   }
 
   public distanceTo(other: Location): number {
