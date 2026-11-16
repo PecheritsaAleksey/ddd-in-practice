@@ -2,14 +2,18 @@ import { ValueObject } from '../../../../common/ValueObject';
 
 export class Volume extends ValueObject {
   public static readonly MIN_VOLUME = 1;
-  public static readonly MAX_VOLUME = 10;
+  public static readonly MAX_VOLUME = 20;
 
   private constructor(public readonly value: number) {
     super();
     Object.freeze(this);
   }
 
-  public static create(value: number): Volume {
+  public static create(value?: number): Volume {
+    if (value === undefined) {
+      return new Volume(Volume.MAX_VOLUME);
+    }
+
     if (
       !Number.isInteger(value) ||
       value < Volume.MIN_VOLUME ||
