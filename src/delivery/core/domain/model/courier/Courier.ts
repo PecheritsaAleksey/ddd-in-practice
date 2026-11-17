@@ -11,7 +11,7 @@ import { AssignmentSnapshot } from './AssignmentSnapshot';
 export class Courier extends Aggregate<Uuid> {
   private _location: Location;
   private _name: string;
-  private readonly _maxVolume: Volume = Volume.create();
+  private readonly _maxVolume: Volume = Volume.create(Volume.DEFAULT_MAX_VOLUME);
   private _assignments: Assignment[] = [];
 
   constructor(location: Location, name: string) {
@@ -76,10 +76,13 @@ export class Courier extends Aggregate<Uuid> {
       return false;
     }
 
-    return (
-      this.getVolumeOfAssignments() + order.volume.value <=
-      this._maxVolume.value
-    );
+    try {
+      return this.getVolumeOfAssignments()
+        .add(order.volume)
+        .isLessThanOrEqualTo(this._maxVolume);
+    } catch {
+      return false;
+    }
   }
 
   public addAssignment(order: Order): void {
@@ -95,8 +98,16 @@ export class Courier extends Aggregate<Uuid> {
       throw new Error('Assignment for this order already exists');
     }
 
-    const totalVolume = this.getVolumeOfAssignments() + order.volume.value;
-    if (totalVolume > this._maxVolume.value) {
+    try {
+      const totalVolume = this.getVolumeOfAssignments().add(order.volume);
+      if (totalVolume.isGreaterThan(this._maxVolume)) {
+        throw new Error('Cannot add assignment, exceeds max volume');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Cannot add assignment, exceeds max volume') {
+        throw error;
+      }
+
       throw new Error('Cannot add assignment, exceeds max volume');
     }
 
@@ -138,11 +149,12 @@ export class Courier extends Aggregate<Uuid> {
     this._location = newLocation;
   }
 
-  private getVolumeOfAssignments(): number {
+  private getVolumeOfAssignments(): Volume {
     return this._assignments
       .filter((a) => a.status !== AssignmentStatus.Completed)
-      .reduce<number>((total, assignment) => {
-        return total + assignment.volume.value;
-      }, 0);
+      .reduce<Volume>(
+        (total, assignment) => total.add(assignment.volume),
+        Volume.create(0),
+      );
   }
 }
