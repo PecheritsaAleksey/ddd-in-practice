@@ -6,7 +6,7 @@ import { Volume } from './Volume';
 
 export class Assignment extends BaseEntity<Uuid> {
   public readonly orderId: Uuid;
-  private status: AssignmentStatus;
+  private _status: AssignmentStatus;
 
   constructor(
     orderId: string | Uuid,
@@ -50,23 +50,11 @@ export class Assignment extends BaseEntity<Uuid> {
     this.orderId = normalizedOrderId;
     this.location = location;
     this.volume = volume;
-    this.status = status;
+    this._status = status;
   }
 
-  public getOrderId(): Uuid {
-    return this.orderId;
-  }
-
-  public getLocation(): Location {
-    return this.location;
-  }
-
-  public getVolume(): Volume {
-    return this.volume;
-  }
-
-  public getStatus(): AssignmentStatus {
-    return this.status;
+  public get status(): AssignmentStatus {
+    return this._status;
   }
 
   public complete(courierLocation: Location): void {
@@ -78,11 +66,11 @@ export class Assignment extends BaseEntity<Uuid> {
       throw new Error('courierLocation is required');
     }
 
-    if (this.status === AssignmentStatus.Completed) {
+    if (this._status === AssignmentStatus.Completed) {
       return;
     }
 
-    if (this.status !== AssignmentStatus.Assigned) {
+    if (this._status !== AssignmentStatus.Assigned) {
       throw new Error('Only assigned assignment can be completed');
     }
 
@@ -90,6 +78,6 @@ export class Assignment extends BaseEntity<Uuid> {
       throw new Error('Courier is too far away');
     }
 
-    this.status = AssignmentStatus.Completed;
+    this._status = AssignmentStatus.Completed;
   }
 }

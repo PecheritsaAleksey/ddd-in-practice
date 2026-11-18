@@ -13,10 +13,10 @@ describe('Assignment', () => {
     const orderId = Uuid.create(validOrderId);
     const assignment = new Assignment(orderId, location, volume);
 
-    expect(assignment.getOrderId().equals(orderId)).toBe(true);
+    expect(assignment.orderId.equals(orderId)).toBe(true);
     expect(assignment.location).toBe(location);
     expect(assignment.volume).toBe(volume);
-    expect(assignment.getStatus()).toBe(AssignmentStatus.Assigned);
+    expect(assignment.status).toBe(AssignmentStatus.Assigned);
   });
 
   it.each([
@@ -65,7 +65,7 @@ describe('Assignment', () => {
 
       assignment.complete(Location.create(x, y));
 
-      expect(assignment.getStatus()).toBe(AssignmentStatus.Completed);
+      expect(assignment.status).toBe(AssignmentStatus.Completed);
     });
 
     it.each([
@@ -77,7 +77,7 @@ describe('Assignment', () => {
       expect(() => assignment.complete(Location.create(x, y))).toThrow(
         'Courier is too far away',
       );
-      expect(assignment.getStatus()).toBe(AssignmentStatus.Assigned);
+      expect(assignment.status).toBe(AssignmentStatus.Assigned);
     });
 
     it.each([null, undefined, {}])(
@@ -88,7 +88,7 @@ describe('Assignment', () => {
         expect(() =>
           assignment.complete(invalidLocation as unknown as Location),
         ).toThrow('courierLocation is required');
-        expect(assignment.getStatus()).toBe(AssignmentStatus.Assigned);
+        expect(assignment.status).toBe(AssignmentStatus.Assigned);
       },
     );
 
@@ -97,7 +97,7 @@ describe('Assignment', () => {
       assignment.complete(location);
 
       expect(() => assignment.complete(Location.create(10, 10))).not.toThrow();
-      expect(assignment.getStatus()).toBe(AssignmentStatus.Completed);
+      expect(assignment.status).toBe(AssignmentStatus.Completed);
     });
 
     it.each([null, undefined, {}])(
@@ -109,7 +109,7 @@ describe('Assignment', () => {
         expect(() =>
           assignment.complete(invalidLocation as unknown as Location),
         ).toThrow('courierLocation is required');
-        expect(assignment.getStatus()).toBe(AssignmentStatus.Completed);
+        expect(assignment.status).toBe(AssignmentStatus.Completed);
       },
     );
   });
