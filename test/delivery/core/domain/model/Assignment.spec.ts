@@ -14,7 +14,7 @@ describe('Assignment', () => {
     const assignment = new Assignment(orderId, location, volume);
 
     expect(assignment.orderId.equals(orderId)).toBe(true);
-    expect(assignment.location).toBe(location);
+    expect(assignment.location.equals(location)).toBe(true);
     expect(assignment.volume).toBe(volume);
     expect(assignment.status).toBe(AssignmentStatus.Assigned);
   });

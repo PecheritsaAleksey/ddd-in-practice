@@ -3,10 +3,32 @@ import { Uuid } from '../../../../../common/Uuid';
 import { Location } from '../Location';
 import { Volume } from '../Volume';
 import { OrderStatus } from './OrderStatus';
+import { AfterLoad, Column, Entity, PrimaryColumn } from 'typeorm';
 
+@Entity({ name: 'orders' })
 export class Order extends Aggregate<Uuid> {
+  @PrimaryColumn('uuid', {
+    transformer: {
+      to: (id: Uuid) => id.toString(),
+      from: (id: string) => Uuid.create(id),
+    },
+  })
+  public override readonly id: Uuid;
+
+  @Column({ name: 'status', type: 'varchar', length: 20 })
   private _status: OrderStatus;
-  private _location: Location;
+  @Column({ name: 'x', type: 'integer' })
+  private _x: number;
+  @Column({ name: 'y', type: 'integer' })
+  private _y: number;
+  @Column({
+    name: 'volume',
+    type: 'integer',
+    transformer: {
+      to: (volume: Volume) => volume.value,
+      from: (value: number) => Volume.create(value),
+    },
+  })
   private _volume: Volume;
 
   constructor(id: Uuid, location: Location, volume: Volume) {
@@ -31,9 +53,19 @@ export class Order extends Aggregate<Uuid> {
     }
 
     super(id);
-    this._location = location;
+    this.id = id;
+    this._x = location.xCoordinate;
+    this._y = location.yCoordinate;
     this._volume = volume;
     this._status = OrderStatus.Created;
+  }
+
+  @AfterLoad()
+  private validateLoadedState(): void {
+    Location.create(this._x, this._y);
+    if (!Object.values(OrderStatus).includes(this._status)) {
+      throw new Error('Invalid status');
+    }
   }
 
   public setStatus(status: OrderStatus): void {
@@ -72,7 +104,7 @@ export class Order extends Aggregate<Uuid> {
   }
 
   public get location(): Location {
-    return this._location;
+    return Location.create(this._x, this._y);
   }
 
   public get volume(): Volume {
