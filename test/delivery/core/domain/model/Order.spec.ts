@@ -13,7 +13,7 @@ describe('Order', () => {
     const order = new Order(id, location, volume);
 
     expect(order.id.equals(id)).toBe(true);
-    expect(order.location).toBe(location);
+    expect(order.location.equals(location)).toBe(true);
     expect(order.volume).toBe(volume);
     expect(order.status).toBe(OrderStatus.Created);
   });
@@ -22,9 +22,12 @@ describe('Order', () => {
     expect(() => new Order(invalid as Uuid, location, volume)).toThrow();
   });
 
-  it.each([null, undefined, {}])('rejects an invalid location: %p', (invalid) => {
-    expect(() => new Order(id, invalid as Location, volume)).toThrow();
-  });
+  it.each([null, undefined, {}])(
+    'rejects an invalid location: %p',
+    (invalid) => {
+      expect(() => new Order(id, invalid as Location, volume)).toThrow();
+    },
+  );
 
   it.each([null, undefined, {}])('rejects an invalid volume: %p', (invalid) => {
     expect(() => new Order(id, location, invalid as Volume)).toThrow();

@@ -7,11 +7,38 @@ import { Order } from '../order/Order';
 import { OrderStatus } from '../order/OrderStatus';
 import { Volume } from '../Volume';
 import { AssignmentSnapshot } from './AssignmentSnapshot';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 
+@Entity({ name: 'couriers' })
 export class Courier extends Aggregate<Uuid> {
-  private _location: Location;
+  @PrimaryColumn('uuid', {
+    transformer: {
+      to: (id: Uuid) => id.toString(),
+      from: (id: string) => Uuid.create(id),
+    },
+  })
+  public override readonly id: Uuid;
+  @Column({ name: 'x', type: 'integer' })
+  private _x: number;
+  @Column({ name: 'y', type: 'integer' })
+  private _y: number;
+  @Column({ name: 'name', type: 'varchar' })
   private _name: string;
-  private readonly _maxVolume: Volume = Volume.create(Volume.DEFAULT_MAX_VOLUME);
+  @Column({
+    name: 'max_volume',
+    type: 'integer',
+    transformer: {
+      to: (volume: Volume) => volume.value,
+      from: (value: number) => Volume.create(value),
+    },
+  })
+  private readonly _maxVolume: Volume = Volume.create(
+    Volume.DEFAULT_MAX_VOLUME,
+  );
+  @OneToMany(() => Assignment, (assignment) => assignment.courier, {
+    cascade: ['insert', 'update'],
+    eager: true,
+  })
   private _assignments: Assignment[] = [];
 
   constructor(location: Location, name: string) {
@@ -32,14 +59,17 @@ export class Courier extends Aggregate<Uuid> {
       throw new Error('name is required');
     }
 
-    super(Uuid.generate());
+    const id = Uuid.generate();
+    super(id);
+    this.id = id;
 
-    this._location = location;
+    this._x = location.xCoordinate;
+    this._y = location.yCoordinate;
     this._name = name;
   }
 
   public get location(): Location {
-    return this._location;
+    return Location.create(this._x, this._y);
   }
 
   public get name(): string {
@@ -104,14 +134,23 @@ export class Courier extends Aggregate<Uuid> {
         throw new Error('Cannot add assignment, exceeds max volume');
       }
     } catch (error) {
-      if (error instanceof Error && error.message === 'Cannot add assignment, exceeds max volume') {
+      if (
+        error instanceof Error &&
+        error.message === 'Cannot add assignment, exceeds max volume'
+      ) {
         throw error;
       }
 
       throw new Error('Cannot add assignment, exceeds max volume');
     }
 
-    const assignment = new Assignment(order.id, order.location, order.volume);
+    const assignment = new Assignment(
+      order.id,
+      order.location,
+      order.volume,
+      AssignmentStatus.Assigned,
+      this.id,
+    );
 
     this._assignments.push(assignment);
   }
@@ -130,7 +169,7 @@ export class Courier extends Aggregate<Uuid> {
       throw new Error('Assignment not found for the given order id');
     }
 
-    assignment.complete(this._location);
+    assignment.complete(this.location);
   }
 
   public updateLocation(newLocation: Location): void {
@@ -142,11 +181,24 @@ export class Courier extends Aggregate<Uuid> {
       throw new Error('new location is required');
     }
 
-    if (newLocation.distanceTo(this._location) > 1) {
+    if (newLocation.distanceTo(this.location) > 1) {
       throw new Error('Courier is too far away');
     }
 
-    this._location = newLocation;
+    this._x = newLocation.xCoordinate;
+    this._y = newLocation.yCoordinate;
+  }
+
+  public validateLoadedState(): void {
+    Location.create(this._x, this._y);
+    if (typeof this._name !== 'string' || this._name.trim() === '')
+      throw new Error('name is required');
+    if (!this._maxVolume.equals(Volume.create(Volume.DEFAULT_MAX_VOLUME)))
+      throw new Error('Invalid maximum volume');
+    if (!Array.isArray(this._assignments))
+      throw new Error('Assignments must be loaded');
+    if (this.getVolumeOfAssignments().isGreaterThan(this._maxVolume))
+      throw new Error('Courier volume exceeds maximum');
   }
 
   private getVolumeOfAssignments(): Volume {
